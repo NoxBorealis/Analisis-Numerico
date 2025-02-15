@@ -226,6 +226,9 @@ Así, para nuestro modelo, definiremos las variables $A$ y $B$:
 # ╔═╡ 994aaf42-115f-435e-bfb3-ecab50e6e094
 A=hcat([DatosX .^ (i-1) for i in 1:6]...) 
 
+# ╔═╡ c35482b5-8146-40fe-b970-f6e0565db715
+B=DatosY
+
 # ╔═╡ 2679180d-cdc2-47c2-9f48-fa6f2a3af62d
 md"""
 ### Funciones:
@@ -287,6 +290,12 @@ end
 
 # Este código realiza el mapeo de los datos.
 
+# ╔═╡ fd6aca59-40c5-432b-96d2-e12728e152ba
+Res_Best=Res(A, C_Best, B)
+
+# ╔═╡ 9044a48e-a197-42d8-a735-66fa15fba3e5
+NRes_Best=NRes(A, C_Best, B)
+
 # ╔═╡ 04c6fc60-b4a0-4f20-b3c0-0e5b78fc7133
 md"""
 A continuación, construiremos las funciones que nos ayudarán a calcular las diferencias y normas relacionadas con los resultados. Estas funciones incluirán:
@@ -308,58 +317,6 @@ function NDif_C(C_Modelo)
     return norm(Dif_Modelo)
 end
 
-# ╔═╡ 03998250-512a-40e1-b4d6-888040598154
-md"""
----
-### Aproximación por función de minimización
-
-Para nuestro trabajo revisaremos, además de los métodos dados, la función optim incorporada en la librería respectiva de Julia, usando el método numérico integrado de LBFGS.
-
-Para esto, crearemos una función particular para la norma del residuo dada una variable de optimización $C_{\text{optim}}$, y luego buscaremos el argumento que minimice tal función. Esta información se guardará posteriormente en la variable **NRes\_Optim\_min**:
-"""
-
-# ╔═╡ 679521d7-d3e3-4fc6-8f9b-a5444ccaa9ef
-md"""
-La función *Optim* incorporada nos proporciona tanto el valor del minimizador como el del mínimo, los cuales renombraremos apropiadamente a continuación:
-"""
-
-# ╔═╡ 44b08efa-1d21-43c1-bafe-7243a4b80b2d
-md"""
-Posteriormente, calcularemos el residuo y las diferencias con nuestro **Best**.
-"""
-
-# ╔═╡ dc613908-2270-40a5-8469-2731183ab2b5
-md"""
-Los valores claramente no se acercan al objetivo. La diferencia en norma con nuestro **Best** es de casi $1$, por lo que podríamos concluir que nos da una diferencia bastante marcada... ¿o no lo hace?
-"""
-
-# ╔═╡ 9bd0a122-ae6a-4b88-9c59-ebc51616f634
-md"""
-Tanto la diferencia como la norma de la diferencia con nuestra función original nos da $0$. Es impresionante que pese a no haber encontrado un valor tan cercano como creeriamos al **Best**, igual conseguimos una aproximación suficientemente buena como para que nos de los mismos valores.
-"""
-
-# ╔═╡ e612950a-57df-4297-918d-064df12efdee
-md"""
----
-### Aproximación por minimos cuadrados
-
-para nuestro trabajo revisaremos ademas de los metodos dados, la función optim incorporada en la libreria respectiva de Julia, usando el metodo numerico integrado de LBFGS.
-
-Para esto crearemos una función particular para la Norma del Residuo dada una variable de optimización $C\_optim$, y luego buscaremos el argumento que minimize tal función, esta información se guardara posteriormente en la variable **NRes\_Optim\_min**:
-"""
-
-# ╔═╡ db0e4d42-f0ba-4f3c-8ec5-b32d24f8ead7
-SSS=svd(A).S
-
-# ╔═╡ 26e947f9-8fd7-4b9f-b7a5-5143ffbb8c1f
-1 ./SSS
-
-# ╔═╡ 6fab3a6a-41b8-4629-ba88-0e64f825ed19
-A[1:10,:]
-
-# ╔═╡ fd6aca59-40c5-432b-96d2-e12728e152ba
-Res_Best=Res(A, C_Best, B)
-
 # ╔═╡ e7bd91a6-fd25-493a-a2b1-3eeaff173a20
 function Dif(Res_Modelo)
     return Res_Modelo - Res_Best
@@ -371,8 +328,15 @@ function NDif(Res_Modelo)
     return norm(Res_Modelo)
 end
 
-# ╔═╡ 9044a48e-a197-42d8-a735-66fa15fba3e5
-NRes_Best=NRes(A, C_Best, B)
+# ╔═╡ 03998250-512a-40e1-b4d6-888040598154
+md"""
+---
+### Aproximación por función de minimización
+
+Para nuestro trabajo revisaremos, además de los métodos dados, la función optim incorporada en la librería respectiva de Julia, usando el método numérico integrado de LBFGS.
+
+Para esto, crearemos una función particular para la norma del residuo dada una variable de optimización $C_{\text{optim}}$, y luego buscaremos el argumento que minimice tal función. Esta información se guardará posteriormente en la variable **NRes\_Optim\_min**:
+"""
 
 # ╔═╡ 38b76aef-1a92-44ee-9666-a4f14ce032b6
 function NRes_Optim_function(C_Optim) #Función de norma a minimizar
@@ -384,14 +348,46 @@ end
 # ╔═╡ f8d6723a-1173-4002-ba78-0469dad14490
 NRes_Optim_ans=Optim.optimize(NRes_Optim_function,[.0 ,.0 ,.0 ,.0 ,.0 ,.0], LBFGS())
 
+# ╔═╡ 679521d7-d3e3-4fc6-8f9b-a5444ccaa9ef
+md"""
+La función *Optim* incorporada nos proporciona tanto el valor del minimizador como el del mínimo, los cuales renombraremos apropiadamente a continuación:
+"""
+
 # ╔═╡ c3e637e5-030d-412e-9625-0e5ae255bc14
 C_Optim=NRes_Optim_ans.minimizer
+
+# ╔═╡ 4867e551-c39f-498b-954e-e50149dc4129
+NRes_Optim=NRes_Optim_ans.minimum
+
+# ╔═╡ 44b08efa-1d21-43c1-bafe-7243a4b80b2d
+md"""
+Posteriormente, calcularemos el residuo y las diferencias con nuestro **Best**.
+"""
+
+# ╔═╡ d12796e8-68e4-4ff1-957b-11a4dd07e12a
+Res_Optim=Res(A, C_Optim, B)
 
 # ╔═╡ a68518a2-7c3a-45c7-9617-e5639edb51b2
 Dif_C(C_Optim)
 
 # ╔═╡ a8f6ab40-c952-4e60-ac05-083052d4eec9
 NDif_C(C_Optim)
+
+# ╔═╡ dc613908-2270-40a5-8469-2731183ab2b5
+md"""
+Los valores claramente no son el valor objetivo. La diferencia en norma con nuestro **Best** es de casi $1$, pero esto no nos basta para decir qué tanto se acercan; para esto son nuestras funciones **Dif** y **NDif**.
+"""
+
+# ╔═╡ 55e7faf7-c342-4059-9281-74ab027aad8a
+Dif(Res_Optim)
+
+# ╔═╡ f9945e82-a57a-474a-b19c-62040ad57ba2
+NDif(Res_Optim)
+
+# ╔═╡ 9bd0a122-ae6a-4b88-9c59-ebc51616f634
+md"""
+Tanto la diferencia como la norma de la diferencia con nuestra función original nos dan valores muy pequeños en comparación con los valores **Best**. El valor en que más se diferencia de este es con una diferencia en valor absoluto de $1.03802$, y la norma de la diferencia es de $1.9896$. Teniendo en cuenta que los valores a los que le estamos haciendo un ajuste de datos rondan los cientos de miles, esto nos da una aproximación bastante acertada (que incluso casi no se ve la diferencia con nuestro **Best**).
+"""
 
 # ╔═╡ 3fa33779-53df-44b6-ab9f-b5631450bdad
 begin
@@ -401,85 +397,81 @@ begin
 	plot!(DatosX, Eval_Optim, lw=5, label="Modelo Optim", linestyle=:dash)
 end
 
-# ╔═╡ 4867e551-c39f-498b-954e-e50149dc4129
-NRes_Optim=NRes_Optim_ans.minimum
+# ╔═╡ e612950a-57df-4297-918d-064df12efdee
+md"""
+---
+### Aproximación por mínimos cuadrados
 
-# ╔═╡ d12796e8-68e4-4ff1-957b-11a4dd07e12a
-Res_Optim=Res(A, C_Optim, B)
+El método de mínimos cuadrados consiste en transformar el sistema $AC = B$ a $A^T A C = A^T B$, lo cual resulta en un sistema cuadrado para la resolución. Este enfoque se utiliza para encontrar los coeficientes que mejor ajustan un modelo lineal a los datos observados minimizando la suma de los cuadrados de las diferencias entre los valores observados y los predichos.
 
-# ╔═╡ 55e7faf7-c342-4059-9281-74ab027aad8a
-Dif(Res_Optim)
+"""
 
-# ╔═╡ f9945e82-a57a-474a-b19c-62040ad57ba2
-NDif(Res_Optim)
+# ╔═╡ 7ccadfcb-7f80-4337-b64d-ad9f7f780d3b
+A_MC=A'A #calculo A^{T}A
 
-# ╔═╡ 039b4aae-9c97-4232-945a-bb43bcf54b1b
-B[:,1:3]
+# ╔═╡ 0dffe2e0-e52d-4dcc-9584-705b04d3b66c
+B_MC=A'B
 
-# ╔═╡ 07dab1cf-d94b-4f3c-9317-54fbc583fb06
-B[:,4:6]
+# ╔═╡ 53566a22-3163-4902-875b-477f50372a7d
+md"""
+**Resolución del sistema:**
 
-# ╔═╡ 9b845c53-3f61-428f-a9fa-b868c76f8bc9
-println(B)
+Entonces, ahora necesitamos resolver el sistema $A_{\text{MC}} C = B_{\text{MC}}$. Este es un sistema de ecuaciones mucho más simple que el que teníamos anteriormente, ya que consiste en $6$ ecuaciones y $6$ incógnitas. Para resolverlo, usaremos el método para la resolución de sistemas lineales.
 
-# ╔═╡ 8fec5e47-4318-4324-96bf-eea258789824
-b=A'DatosY
+"""
 
-# ╔═╡ a9053e26-9ffa-4c44-a98a-99404c2c6236
-println("Sistema de ecuaciones:")
+# ╔═╡ dacf8ecf-a5cc-48c3-acba-ed69c84d1a58
+C_MC = A_MC\B_MC
 
-# ╔═╡ 8d6131ef-cf20-4f0f-8cee-cf27f0f2126e
-println("B * x = b")
+# ╔═╡ 93d14dba-75ba-47a1-bfaf-809f4cdfc851
+Res_MC=Res(A, C_MC, B)
 
-# ╔═╡ 8d29562a-d2a4-48f5-b113-1201cc938809
-x = B \ b
+# ╔═╡ 603c9a9e-1ff6-4eea-a18a-1e0204542d96
+NRes_MC=NRes(A,C_MC,B)
 
-# ╔═╡ 01cb1d18-15e1-4ba3-8421-84a361a13cee
+# ╔═╡ a6e8d3ff-1b0c-4769-9a54-5ba4e63f5594
+md"""
+Ya hemos calculado nuestros valores residuales con los datos de ajuste, y ahora vamos a graficar nuestro nuevo modelo sobre el **Best**:
+"""
+
+# ╔═╡ cb362fdb-51bf-4391-b0e4-cfb967a17905
+# ╠═╡ disabled = true
+#=╠═╡
 begin
-	vMinCuadradosQuintico = x[1] * arrAux + x[2] * DatosX + x[3] * DatosX .^ 2 + x[4] * DatosX .^ 3 + x[5] * DatosX .^ 4 + x[6]* DatosX .^ 5;
-
-	plot(DatosX, vModeloQuintico, lw=5, label="Modelo Cúbico óptimo");
-	scatter!(DatosX, DatosY, ls=:dash,label="Datos de ajuste",lw=4, xlabel = "DatosX",yaxis="DatosY", title="Datos.txt")
-	plot!(DatosX, vModeloQuintico, lw=5, label="Modelo Cúbico metodo de optimizacion");
-	
+    Eval_MC = Eval(C_MC)
+    scatter(DatosX, DatosY, ls=:dash, label="Datos Y", lw=4, xlabel="Datos X",yaxis="Datos Y", title="Gráfica Optim")
+    plot!(DatosX, Eval_Best, lw=5, label="Modelo Best", color=:green)
+    plot!(DatosX, Eval_MC, lw=5, label="Modelo Mínimos Cuadrados", linestyle=:dash, color=:orange)
 end
 
-# ╔═╡ 4a3e93d0-2a96-4ea0-80ab-a58b2a517457
-function RRRes(A1, xans, b1) #6 datos
+  ╠═╡ =#
 
-	C=A1*xans-b1
+# ╔═╡ 8a310932-0bcb-45be-a15a-19feec6e6215
+md"""
+Como se puede ver, la respuesta es casi la misma, con pequeñas diferencias que a continuación se pueden observar, las cuales son menores a $10^{-7}$. Además, la diferencia en norma es también muy pequeña.
+"""
 
-	nRes=norm(C)
+# ╔═╡ 09dc831a-1216-4e91-be73-bb1641dbfa1a
+Dif_MC=Dif_C(C_MC)
 
-	return nRes
-end
+# ╔═╡ 891235e4-6675-4106-bfc7-5d31f5b32d3e
+NDif_MC=NDif_C(C_MC)
 
-# ╔═╡ 6c9cb279-1510-41e1-bedb-e19132c9ce10
-function RRRRes2(A1, xans, b1) #6 datos
+# ╔═╡ 27f5d120-b147-4eb4-a76a-c9a1b06dae6f
+md"""
+#### Función residuo
 
-	C=A1*xans-b1
+La función residuo que buscamos minimizar es la diferencia entre los valores observados y los valores predichos por el modelo. Se define como:
 
-	nRes=norm(C)
+$$NR_{\textbf{MC}}(C_{MC}) = ||B - A C_{MC}||_2^2$$
 
-	return C
-end
+donde $R_{\textbf{MC}}(C_{MC})$ es el residuo en función de los coeficientes $C_{MC}$, siendo $B$ el vector de valores observados y $A$ la matriz de diseño. Al minimizar esta función, encontramos los coeficientes que ajustan mejor el modelo a los datos, minimizando así el error cuadrático. como se puede ver esta diferencia es el cuadrado de la norma anterior, luego nuestro residuo minimizado asociado a el problema de Minimos Cuadrados es:
+"""
 
-# ╔═╡ 76b76c45-5fa3-4cdb-b1d8-179d5b530a9c
-k=Res(A,x,DatosY)
+# ╔═╡ de17e504-9264-4c17-af32-92eea33334dc
+NR_MC=NRes_MC^2
 
-# ╔═╡ 482dd510-083b-4c23-857e-65417dac5dd7
-k2
-
-# ╔═╡ 19a36d2e-33b8-4e36-a811-e9a2b128ca40
-k3=k-k2
-
-# ╔═╡ 76e88ee4-e6bc-45ab-b42c-82b03bf65632
-S=Res2(A,x,DatosY)
-
-# ╔═╡ b690b9c5-ee2e-47b1-a67f-5f21332f4d7f
-k3/k
-
-# ╔═╡ edb9556c-3849-43ab-a0c5-061a8f8f93dc
+# ╔═╡ 3b10c051-851c-4d2b-b6a4-a8eed8aef0d8
 
 
 # ╔═╡ e20905ca-9310-46e1-b5c0-3bea5d65c985
@@ -619,15 +611,6 @@ begin
 	plot!(DatosX, vQRQ3, lw=4, label="QR chevere", yaxis="DatosY", title="Datos.txt");
 	
 end
-
-# ╔═╡ c35482b5-8146-40fe-b970-f6e0565db715
-B=DatosY
-
-# ╔═╡ d85f14da-f793-4c1a-a246-b9786c49418f
-# ╠═╡ disabled = true
-#=╠═╡
-B=A'A
-  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2851,31 +2834,25 @@ version = "1.4.1+1"
 # ╠═a68518a2-7c3a-45c7-9617-e5639edb51b2
 # ╠═a8f6ab40-c952-4e60-ac05-083052d4eec9
 # ╟─dc613908-2270-40a5-8469-2731183ab2b5
-# ╠═55e7faf7-c342-4059-9281-74ab027aad8a
+# ╟─55e7faf7-c342-4059-9281-74ab027aad8a
 # ╠═f9945e82-a57a-474a-b19c-62040ad57ba2
 # ╟─9bd0a122-ae6a-4b88-9c59-ebc51616f634
-# ╠═3fa33779-53df-44b6-ab9f-b5631450bdad
-# ╠═e612950a-57df-4297-918d-064df12efdee
-# ╠═db0e4d42-f0ba-4f3c-8ec5-b32d24f8ead7
-# ╠═26e947f9-8fd7-4b9f-b7a5-5143ffbb8c1f
-# ╠═6fab3a6a-41b8-4629-ba88-0e64f825ed19
-# ╠═d85f14da-f793-4c1a-a246-b9786c49418f
-# ╠═039b4aae-9c97-4232-945a-bb43bcf54b1b
-# ╠═07dab1cf-d94b-4f3c-9317-54fbc583fb06
-# ╠═9b845c53-3f61-428f-a9fa-b868c76f8bc9
-# ╠═8fec5e47-4318-4324-96bf-eea258789824
-# ╠═a9053e26-9ffa-4c44-a98a-99404c2c6236
-# ╠═8d6131ef-cf20-4f0f-8cee-cf27f0f2126e
-# ╠═8d29562a-d2a4-48f5-b113-1201cc938809
-# ╠═01cb1d18-15e1-4ba3-8421-84a361a13cee
-# ╠═4a3e93d0-2a96-4ea0-80ab-a58b2a517457
-# ╠═6c9cb279-1510-41e1-bedb-e19132c9ce10
-# ╠═76b76c45-5fa3-4cdb-b1d8-179d5b530a9c
-# ╠═482dd510-083b-4c23-857e-65417dac5dd7
-# ╠═19a36d2e-33b8-4e36-a811-e9a2b128ca40
-# ╠═76e88ee4-e6bc-45ab-b42c-82b03bf65632
-# ╠═b690b9c5-ee2e-47b1-a67f-5f21332f4d7f
-# ╠═edb9556c-3849-43ab-a0c5-061a8f8f93dc
+# ╟─3fa33779-53df-44b6-ab9f-b5631450bdad
+# ╟─e612950a-57df-4297-918d-064df12efdee
+# ╠═7ccadfcb-7f80-4337-b64d-ad9f7f780d3b
+# ╠═0dffe2e0-e52d-4dcc-9584-705b04d3b66c
+# ╠═53566a22-3163-4902-875b-477f50372a7d
+# ╠═dacf8ecf-a5cc-48c3-acba-ed69c84d1a58
+# ╠═93d14dba-75ba-47a1-bfaf-809f4cdfc851
+# ╠═603c9a9e-1ff6-4eea-a18a-1e0204542d96
+# ╠═a6e8d3ff-1b0c-4769-9a54-5ba4e63f5594
+# ╠═cb362fdb-51bf-4391-b0e4-cfb967a17905
+# ╟─8a310932-0bcb-45be-a15a-19feec6e6215
+# ╠═09dc831a-1216-4e91-be73-bb1641dbfa1a
+# ╠═891235e4-6675-4106-bfc7-5d31f5b32d3e
+# ╠═27f5d120-b147-4eb4-a76a-c9a1b06dae6f
+# ╠═de17e504-9264-4c17-af32-92eea33334dc
+# ╠═3b10c051-851c-4d2b-b6a4-a8eed8aef0d8
 # ╠═e20905ca-9310-46e1-b5c0-3bea5d65c985
 # ╟─47763730-69f4-4303-b52e-e1146e542ec3
 # ╟─5e580c87-210e-4796-8f1a-bdaac9b3372a
