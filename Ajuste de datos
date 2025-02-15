@@ -103,13 +103,15 @@ a continuación se presentara la notación usada en el código para facilitar su
 
 - **DatosX** y **DatosY**: Primera y segunda columna de los datos respectivamente, donde corresponderan **DatosX**$_i=x_i$ y **DatosY**$_i=y_i$ como $(x_i,y_i)$. En las funciones **xVals** sera equivalente a **DatosX**, tal como **yVals** lo sera a **DatosY**.
 
+- **arrAux**
+
 - la notación fija para el sistema de ecuaciones sera $AC=B$, donde **A** es la matriz con el sistema de ecuaciónes, **C** es el vector de incognitas, y **B** el vector de terminos independientes. (El sistema de Ecuaciónes se planteara explicitamente más adelante)
 
 ###### Prefijos de funciones:
 Para las funciones que seran utilizadas:
 - **Res** y **NRes**: toda función que comienze con **Res** sera una función de residuo entre nuestro valor ideal y el dado por los datos, en caso de ser **NRes** es la norma del residuo
 - **Dif** y **NDif**: dado que se nos da la respuesta exacta del problema, las funciónes que comienzen por **Dif** seran aquellas que nos muestren la diferencia entre el valor objetivo y el dado conseguido por el metodo en cuestion, **NDif** sera la norma de esta diferencia.
-- **Eval**: función de evaluación del polinomio de grado quintico, dados los coeficientes en $C_i$
+- **Eval**: función de evaluación del polinomio de grado quintico, dados los coeficientes en $C_i$, esto se hara evaluando la función respectiva, en caso de que sea la multiplicación de alguna matriz de ajuste con $C$ se usara **Eval2**.
 
 ---
 
@@ -220,72 +222,123 @@ c_6
 Así para nuestro modelo definiremos las variables $A$ y $B$:
 """
 
+# ╔═╡ 994aaf42-115f-435e-bfb3-ecab50e6e094
+A=hcat([DatosX .^ (i-1) for i in 1:6]...)
+
 # ╔═╡ 2679180d-cdc2-47c2-9f48-fa6f2a3af62d
 md"""
 ### Funciones:
 
 Tal como se menciono anteriormente se hara uso de ciertas funciones, algunas de las cuales definiremos a continuación:
+
+Nota, **arrAux** es un arreglo de datos de valor 1 usado para el calculo de Eval.
 """
 
+# ╔═╡ 73437f68-0439-4153-b31f-dac64a366ea5
+arrAux = fill(1, size(DatosX));
+
+# ╔═╡ afc60884-3fca-4844-bf27-ddc8ecdbb4ea
+function Eval(C)
+	Eval_Modelo = C[1] * arrAux + C[2] * DatosX + C[3] * DatosX .^ 2 + C[4] * DatosX .^ 3 + C[5] * DatosX .^ 4 + C[6] * DatosX .^ 5;
+	return Eval_Modelo
+end
+	
+
 # ╔═╡ a821e5b5-9aff-45e7-bdd4-203eec69b3e5
-function Eval(A, C)
-	Eval_Modelo=A*C
+function Eval2(A, C)
+	Eval2_Modelo=A*C
+end
+
+# ╔═╡ 4a7a74f7-0ff4-4142-8934-b44fa245ddd5
+function Res(A, C, B)
+	Eval_Modelo=Eval(A)
+
+	Res_Modelo=Eval_Modelo-B
+
+	return Res_Modelo
+end
+
+# ╔═╡ 34cb2b8e-0bde-4725-8776-663466775225
+function NRes(A, C, B)
+	Res_Modelo=Res(A, C, B)
+
+	NRes_Modelo=norm(Res_Modelo)
+
+	return NRes_Modelo
 end
 
 # ╔═╡ eef07b09-959b-49c7-b345-4d7dd4f5945c
 md"""
 ### Valor objetivo.
 
-Como se menciono anteriormente, ya tenemos solucion, es la siguiente:
+Como se menciono anteriormente, ya tenemos solucion, la cual es:
 
-(insertar)
-
-(graficar)
+$C=[1,1,1,1,1,1]$
 
 Asi que compararemos los metodos con esta solucion
 
-(Crear funciones diff)
 """
+
+# ╔═╡ b523662f-1e66-4890-bec3-99d14dd579b9
+C_Best=[1.,1.,1.,1.,1.,1.]
+
+# ╔═╡ c5ed1f38-1cb5-4d49-a519-a61ccc0ff617
+begin
+	Eval_Best=Eval(C_Best)
+	scatter(DatosX,DatosY,ls=:dash,label="Datos Y",lw=4, xlabel = "Datos X",yaxis="Datos Y", title="Grafica datos")
+	plot!(DatosX, Eval_Best, lw=5, label="Modelo Best");
+end
+
+# Esta va a ser el codigo para el mapeo de los datos
+
+# ╔═╡ 04c6fc60-b4a0-4f20-b3c0-0e5b78fc7133
+md"""
+Ahora, revisaremos nuestros, ya que (se suponen) son los que minimizan el residuo, de aqui salen las funciones **Dif_C** de diferencia de los valores de C, **NDif_C** norma de esta diferencia, **Dif** diferencia de los residuos, **NDif** norma de la diferencia:
+"""
+
+# ╔═╡ a922ee43-fecf-4090-9e19-043309a8712b
+function Dif_C(C_Modelo)
+	Dif_Modelo=C_Modelo-C_Best
+	return Dif_Modelo
+end
+
+# ╔═╡ 03b91224-3ee0-42c1-8b0c-11b3226a45af
+function NDif_C(C_Modelo)
+	Dif_Modelo=Dif_C(C_Modelo)
+	return norm(Dif_Modelo)
+end
 
 # ╔═╡ 03998250-512a-40e1-b4d6-888040598154
 md"""
 ### Aproximación por función de minimización
 
-para nuestra
+para nuestro trabajo revisaremos ademas de los metodos dados, la función optim incorporada en la libreria respectiva de Julia, usando el metodo numerico integrado de LBFGS.
+
+Para esto crearemos una función particular para la Norma del Residuo dada una variable de optimización $C\_optim$, y luego buscaremos el argumento que minimize tal función, esta información se guardara posteriormente en la variable **NRes\_Optim\_min**:
 """
 
-# ╔═╡ 24045829-eb23-4498-ab8e-b1822742a38b
-Eval([1.,1.,1.,1.,1.,1.], DatosX)
+# ╔═╡ 679521d7-d3e3-4fc6-8f9b-a5444ccaa9ef
+md"""
+La función *Optim* incorporada nos da tanto el valor del minimizador como el del minimo, los cuales renombraremos apropiadamente a continuación:
+"""
 
-# ╔═╡ 4ce4151c-045a-4139-9459-1805c6167643
-function residuoQuintico(C, yVals, xVals) #6 datos
-	vModelo=Eval(C, xVals)
-	res=vDatos-vModelo
-	nRes=norm(res)
+# ╔═╡ 44b08efa-1d21-43c1-bafe-7243a4b80b2d
+md"""
+Posteriormente calcularemos el residuo y las diferencias con nuestro **Best**
+"""
 
-	return nRes
-end
+# ╔═╡ dc613908-2270-40a5-8469-2731183ab2b5
+md"""
+Los valores claramente no se acercan al objetivo, la diferencia en norma con nuestro **Best** es de casi $1$, podriamos concluir entonces que nos da una diferencia bastante remarcada... ¿o no lo hace?
+"""
 
-# ╔═╡ a259f4d6-d225-4ce1-9b85-3757def3e588
-rQ(tuplaQ) = residuoQuintico(tuplaQ, DatosY, DatosX)
+# ╔═╡ 9bd0a122-ae6a-4b88-9c59-ebc51616f634
+md"""
+Tanto la diferencia como la norma de la diferencia con nuestra función original nos da $0$. Es impresionante que pese a no haber encontrado un valor tan cercano como creeriamos al **Best**, igual conseguimos una aproximación suficientemente buena como para que nos de los mismos valores.
+"""
 
-# ╔═╡ f8d6723a-1173-4002-ba78-0469dad14490
-oQ =Optim.optimize(rQ,[.0 ,.0 ,.0 ,.0 ,.0 ,.0], LBFGS())
+# ╔═╡ e612950a-57df-4297-918d-064df12efdee
 
-# ╔═╡ c3e637e5-030d-412e-9625-0e5ae255bc14
-oQ.minimizer
-
-# ╔═╡ 4867e551-c39f-498b-954e-e50149dc4129
-k2=oQ.minimum
-
-# ╔═╡ 3fa33779-53df-44b6-ab9f-b5631450bdad
-begin
-	arrAux = fill(1, size(DatosX));
-	vModeloQuintico = oQ.minimizer[1] * arrAux + oQ.minimizer[2] * DatosX + oQ.minimizer[3] * DatosX .^ 2 + oQ.minimizer[4] * DatosX .^ 3 + oQ.minimizer[5] * DatosX .^ 4 + oQ.minimizer[6] * DatosX .^ 5;
-	plot(DatosX, vModeloQuintico, lw=5, label="Modelo Cúbico óptimo");
-	scatter!(DatosX, DatosY, ls=:dash,label="Camas UCI Covid-19",lw=4, xlabel = "Fecha",yaxis="Camas UCI Covid-19", title="Ocupación de Camas UCI")
-	
-end
 
 # ╔═╡ db0e4d42-f0ba-4f3c-8ec5-b32d24f8ead7
 SSS=svd(A).S
@@ -295,6 +348,62 @@ SSS=svd(A).S
 
 # ╔═╡ 6fab3a6a-41b8-4629-ba88-0e64f825ed19
 A[1:10,:]
+
+# ╔═╡ fd6aca59-40c5-432b-96d2-e12728e152ba
+Res_Best=Res(A, C_Best, B)
+
+# ╔═╡ e7bd91a6-fd25-493a-a2b1-3eeaff173a20
+function Dif(Res_Modelo)
+	return Res_Modelo-Res_Best
+end
+
+# ╔═╡ 6f035cbb-8ba3-49c4-a1d6-9308e9acd3a8
+function NDif(Res_Modelo)
+	Res_Modelo=Dif(Res_Modelo)
+	return norm(Res_Modelo)
+end
+
+# ╔═╡ 9044a48e-a197-42d8-a735-66fa15fba3e5
+NRes_Best=NRes(A, C_Best, B)
+
+# ╔═╡ 38b76aef-1a92-44ee-9666-a4f14ce032b6
+function NRes_Optim_function(C_Optim) #Función de norma a minimizar
+	Eval_Optim=Eval(C_Optim)
+	Res_Optim=B-Eval_Optim
+	return norm(Res_Optim)
+end
+
+# ╔═╡ f8d6723a-1173-4002-ba78-0469dad14490
+NRes_Optim_ans=Optim.optimize(NRes_Optim_function,[.0 ,.0 ,.0 ,.0 ,.0 ,.0], LBFGS())
+
+# ╔═╡ c3e637e5-030d-412e-9625-0e5ae255bc14
+C_Optim=NRes_Optim_ans.minimizer
+
+# ╔═╡ a68518a2-7c3a-45c7-9617-e5639edb51b2
+Dif_C(C_Optim)
+
+# ╔═╡ a8f6ab40-c952-4e60-ac05-083052d4eec9
+NDif_C(C_Optim)
+
+# ╔═╡ 3fa33779-53df-44b6-ab9f-b5631450bdad
+begin
+	Eval_Optim=Eval(C_Optim)
+	scatter(DatosX,DatosY,ls=:dash,label="Datos Y",lw=4, xlabel = "Datos X",yaxis="Datos Y", title="Grafica Optim")
+	plot!(DatosX, Eval_Best, lw=5, label="Modelo Best")
+	plot!(DatosX, Eval_Optim, lw=5, label="Modelo Optim", linestyle=:dash)
+end
+
+# ╔═╡ 4867e551-c39f-498b-954e-e50149dc4129
+NRes_Optim=NRes_Optim_ans.minimum
+
+# ╔═╡ d12796e8-68e4-4ff1-957b-11a4dd07e12a
+Res_Optim=Res(A, C_Optim, B)
+
+# ╔═╡ 55e7faf7-c342-4059-9281-74ab027aad8a
+Dif(Res_Optim)
+
+# ╔═╡ f9945e82-a57a-474a-b19c-62040ad57ba2
+NDif(Res_Optim)
 
 # ╔═╡ 039b4aae-9c97-4232-945a-bb43bcf54b1b
 B[:,1:3]
@@ -327,17 +436,18 @@ begin
 	
 end
 
-# ╔═╡ 34cb2b8e-0bde-4725-8776-663466775225
-function NRes(A, C, B)
-	Res_Modelo=Res(A, C, B)
+# ╔═╡ 4a3e93d0-2a96-4ea0-80ab-a58b2a517457
+function RRRes(A1, xans, b1) #6 datos
 
-	NRes_Modelo=norm(Res_Modelo)
+	C=A1*xans-b1
 
-	return NRes_Modelo
+	nRes=norm(C)
+
+	return nRes
 end
 
 # ╔═╡ 6c9cb279-1510-41e1-bedb-e19132c9ce10
-function Res2(A1, xans, b1) #6 datos
+function RRRRes2(A1, xans, b1) #6 datos
 
 	C=A1*xans-b1
 
@@ -502,42 +612,14 @@ begin
 	
 end
 
-# ╔═╡ 4ed0503b-70c6-4884-a51d-03a49ab60868
-# ╠═╡ disabled = true
-#=╠═╡
-A=hcat([DatosX .^ (i-1) for i in 1:6]...) 
-  ╠═╡ =#
-
-# ╔═╡ 4a7a74f7-0ff4-4142-8934-b44fa245ddd5
-function Res(A, C, B)
-	Eval_Modelo=Eval(A,C)
-
-	Res_Modelo=Eval_Modelo-B
-
-	return Res_Modelo
-end
-
 # ╔═╡ c35482b5-8146-40fe-b970-f6e0565db715
 B=DatosY
-
-# ╔═╡ 4a3e93d0-2a96-4ea0-80ab-a58b2a517457
-function Res(A1, xans, b1) #6 datos
-
-	C=A1*xans-b1
-
-	nRes=norm(C)
-
-	return nRes
-end
 
 # ╔═╡ d85f14da-f793-4c1a-a246-b9786c49418f
 # ╠═╡ disabled = true
 #=╠═╡
 B=A'A
   ╠═╡ =#
-
-# ╔═╡ 994aaf42-115f-435e-bfb3-ecab50e6e094
-A=hcat([DatosX .^ (i-1) for i in 1:6]...)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2729,25 +2811,43 @@ version = "1.4.1+1"
 # ╟─6b2fb849-f789-42fa-861f-0dafdc16cd49
 # ╠═779666c1-516e-422b-be35-418d42a7ee29
 # ╠═932e44e8-0222-43f2-af58-32c6b8287d2a
-# ╠═3d5a6c66-8f89-4ca9-8a04-02cd571e0fd1
+# ╟─3d5a6c66-8f89-4ca9-8a04-02cd571e0fd1
 # ╟─655745df-a402-47d8-a0d8-f65cdcc091df
 # ╟─71769a32-02eb-42e4-8f4d-b77f4db4f6be
 # ╠═994aaf42-115f-435e-bfb3-ecab50e6e094
 # ╠═c35482b5-8146-40fe-b970-f6e0565db715
 # ╟─2679180d-cdc2-47c2-9f48-fa6f2a3af62d
+# ╠═73437f68-0439-4153-b31f-dac64a366ea5
+# ╠═afc60884-3fca-4844-bf27-ddc8ecdbb4ea
 # ╠═a821e5b5-9aff-45e7-bdd4-203eec69b3e5
 # ╠═4a7a74f7-0ff4-4142-8934-b44fa245ddd5
 # ╠═34cb2b8e-0bde-4725-8776-663466775225
-# ╠═eef07b09-959b-49c7-b345-4d7dd4f5945c
-# ╠═03998250-512a-40e1-b4d6-888040598154
-# ╠═24045829-eb23-4498-ab8e-b1822742a38b
-# ╠═4ce4151c-045a-4139-9459-1805c6167643
-# ╠═a259f4d6-d225-4ce1-9b85-3757def3e588
+# ╟─eef07b09-959b-49c7-b345-4d7dd4f5945c
+# ╠═b523662f-1e66-4890-bec3-99d14dd579b9
+# ╠═c5ed1f38-1cb5-4d49-a519-a61ccc0ff617
+# ╠═fd6aca59-40c5-432b-96d2-e12728e152ba
+# ╠═9044a48e-a197-42d8-a735-66fa15fba3e5
+# ╟─04c6fc60-b4a0-4f20-b3c0-0e5b78fc7133
+# ╠═a922ee43-fecf-4090-9e19-043309a8712b
+# ╠═03b91224-3ee0-42c1-8b0c-11b3226a45af
+# ╠═e7bd91a6-fd25-493a-a2b1-3eeaff173a20
+# ╠═6f035cbb-8ba3-49c4-a1d6-9308e9acd3a8
+# ╟─03998250-512a-40e1-b4d6-888040598154
+# ╠═38b76aef-1a92-44ee-9666-a4f14ce032b6
 # ╠═f8d6723a-1173-4002-ba78-0469dad14490
+# ╟─679521d7-d3e3-4fc6-8f9b-a5444ccaa9ef
 # ╠═c3e637e5-030d-412e-9625-0e5ae255bc14
 # ╠═4867e551-c39f-498b-954e-e50149dc4129
+# ╟─44b08efa-1d21-43c1-bafe-7243a4b80b2d
+# ╠═d12796e8-68e4-4ff1-957b-11a4dd07e12a
+# ╠═a68518a2-7c3a-45c7-9617-e5639edb51b2
+# ╠═a8f6ab40-c952-4e60-ac05-083052d4eec9
+# ╟─dc613908-2270-40a5-8469-2731183ab2b5
+# ╠═55e7faf7-c342-4059-9281-74ab027aad8a
+# ╠═f9945e82-a57a-474a-b19c-62040ad57ba2
+# ╟─9bd0a122-ae6a-4b88-9c59-ebc51616f634
 # ╠═3fa33779-53df-44b6-ab9f-b5631450bdad
-# ╠═4ed0503b-70c6-4884-a51d-03a49ab60868
+# ╠═e612950a-57df-4297-918d-064df12efdee
 # ╠═db0e4d42-f0ba-4f3c-8ec5-b32d24f8ead7
 # ╠═26e947f9-8fd7-4b9f-b7a5-5143ffbb8c1f
 # ╠═6fab3a6a-41b8-4629-ba88-0e64f825ed19
