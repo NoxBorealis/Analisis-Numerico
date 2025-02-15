@@ -16,14 +16,13 @@ using Optim
 # ╔═╡ d8bc0cfc-4d56-4d48-856c-33faeac257a6
 md"""
 # Punto 2:
-Descargue el archivo **Datos.txt** de la página del curso. En este encontrará un conjunto de $21$ datos.
-Copie estos datos y calcule el polinomio de ajuste de grado $5$ $p(x)=c_0+c_1x+c_2x^2+ c_3x^3+ c_4x^4+c_5x^5$utilizando los métodos de ecuaciones normales y factorización $QR$. Compare sus resultados con los valores
-certificados $c_i=1$ para $i=0,1,2,3,4,5$. Encuentre el residual $||Ac-y||_2$ en cada caso, así como la diferencia
-relativa con respecto a los valores certificados. Escriba sus conclusiones.
+Descargue el archivo **Datos.txt** de la página del curso. En este encontrará un conjunto de $21$ datos. Copie estos datos y calcule el polinomio de ajuste de grado $5$: $p(x)=c_0+c_1x+c_2x^2+c_3x^3+c_4x^4+c_5x^5$ utilizando los métodos de ecuaciones normales y factorización $QR$. Compare sus resultados con los valores certificados $c_i=1$ para $i=0,1,2,3,4,5$. Encuentre el residual $||A\mathbf{c}-\mathbf{y}||_2$ en cada caso, así como la diferencia relativa con respecto a los valores certificados. Escriba sus conclusiones.
 """
 
 # ╔═╡ 4a70019d-0b09-412c-85bb-2602223095db
-md"""los datos son los siguientes:"""
+md"""
+Los datos son los siguientes:
+"""
 
 # ╔═╡ 6b2fb849-f789-42fa-861f-0dafdc16cd49
 md"""
@@ -85,13 +84,14 @@ begin
 end
 
 # ╔═╡ 932e44e8-0222-43f2-af58-32c6b8287d2a
-scatter(DatosX,DatosY,ls=:dash,label="Datos Y",lw=4, xlabel = "Datos X",yaxis="Datos Y", title="Grafica datos")
+scatter(DatosX, DatosY, ls=:dash, label="Datos Y", lw=4, xlabel="Datos X", yaxis="Datos Y", title="Gráfica datos")
+
 
 # ╔═╡ 3d5a6c66-8f89-4ca9-8a04-02cd571e0fd1
 md"""
-### Notación estandar:
+### Notación estándar:
 
-a continuación se presentara la notación usada en el código para facilitar su entendimiento. Esta constara de algunos nombres para los datos y las variables como prefijos que nos diran su utilidad, mientras que los sufijos nos diran información acerca de cual es el metodo usado para ese valor en particular.
+A continuación se presentará la notación usada en el código para facilitar su entendimiento. Esta constará de algunos nombres para los datos y las variables como prefijos que nos dirán su utilidad, mientras que los sufijos nos dirán información acerca de cuál es el método usado para ese valor en particular.
 
 ---
 
@@ -101,32 +101,32 @@ a continuación se presentara la notación usada en el código para facilitar su
 
 - **Datos**: la matriz $21\times 2$ con los datos que requieren el ajuste.
 
-- **DatosX** y **DatosY**: Primera y segunda columna de los datos respectivamente, donde corresponderan **DatosX**$_i=x_i$ y **DatosY**$_i=y_i$ como $(x_i,y_i)$. En las funciones **xVals** sera equivalente a **DatosX**, tal como **yVals** lo sera a **DatosY**.
+- **DatosX** y **DatosY**: Primera y segunda columna de los datos respectivamente, donde corresponderán **DatosX**$_i=x_i$ y **DatosY**$_i=y_i$ como $(x_i,y_i)$.
 
-- **arrAux**
+- **arrAux**: un arreglo que se inicializa con unos, del mismo tamaño que **DatosX**.
 
-- la notación fija para el sistema de ecuaciones sera $AC=B$, donde **A** es la matriz con el sistema de ecuaciónes, **C** es el vector de incognitas, y **B** el vector de terminos independientes. (El sistema de Ecuaciónes se planteara explicitamente más adelante)
+- La notación fija para el sistema de ecuaciones será $AC=B$, donde **A** es la matriz con el sistema de ecuaciones, **C** es el vector de incógnitas, y **B** el vector de términos independientes. (El sistema de ecuaciones se planteará explícitamente más adelante).
 
 ###### Prefijos de funciones:
-Para las funciones que seran utilizadas:
-- **Res** y **NRes**: toda función que comienze con **Res** sera una función de residuo entre nuestro valor ideal y el dado por los datos, en caso de ser **NRes** es la norma del residuo
-- **Dif** y **NDif**: dado que se nos da la respuesta exacta del problema, las funciónes que comienzen por **Dif** seran aquellas que nos muestren la diferencia entre el valor objetivo y el dado conseguido por el metodo en cuestion, **NDif** sera la norma de esta diferencia.
-- **Eval**: función de evaluación del polinomio de grado quintico, dados los coeficientes en $C_i$, esto se hara evaluando la función respectiva, en caso de que sea la multiplicación de alguna matriz de ajuste con $C$ se usara **Eval2**.
+Para las funciones que serán utilizadas:
+- **Res** y **NRes**: toda función que comience con **Res** será una función de residuo entre nuestro valor ideal y el dado por los datos; en caso de ser **NRes**, es la norma del residuo.
+- **Dif** y **NDif**: dado que se nos da la respuesta exacta del problema, las funciones que comiencen por **Dif** serán aquellas que nos muestren la diferencia entre el valor objetivo y el dado conseguido por el método en cuestión; **NDif** será la norma de esta diferencia.
+- **Eval**: función de evaluación del polinomio de grado quíntico, dados los coeficientes en $C_i$, esto se hará evaluando la función respectiva; en caso de que sea la multiplicación de alguna matriz de ajuste con $C$, se usará **Eval2**.
 
 ---
 
 ##### Sufijos:
 
-Se usaran $4$ Sufijos principales, cada uno acorde a un modelo para ajuste de datos diferente (para las funciones genericas respecto a los modelos se usara el termino **Modelo**), estos seran conectados con los prefijos a través del simbolo "$\_$":
+Se usarán $4$ sufijos principales, cada uno acorde a un modelo para ajuste de datos diferente (para las funciones genéricas respecto a los modelos se usará el término **Modelo**); estos serán conectados con los prefijos a través del símbolo "$\_$":
 
-- **Best**: Aquella que usa los valores dados en el enunciado del ejercicio como optimos.
-- **Optim**: usa el comando *Optim* de la libreria correspondiente para hallar una estimación, usa metodos ajenos al curso, pero utiles al comparar.
-- **MC**: Abreviatura de Minimos cuadrados, corresponde a tal metodo.
+- **Best**: Aquella que usa los valores dados en el enunciado del ejercicio como óptimos.
+- **Optim**: usa el comando *Optim* de la librería correspondiente para hallar una estimación, usa métodos ajenos al curso, pero útiles al comparar.
+- **MC**: Abreviatura de Mínimos cuadrados, corresponde a tal método.
 - **QR**: Usando la factorización $QR$ para la solución del problema de ajuste.
 
 ---
 
-Vale aclarar que algunos de estos métodos requieren sus propias derivaciones, en tal caso se planteara la notación adicional requerida al inicio de cada problema.
+Vale aclarar que algunos de estos métodos requieren sus propias derivaciones; en tal caso se planteará la notación adicional requerida al inicio de cada problema.
 
 """
 
@@ -134,7 +134,7 @@ Vale aclarar que algunos de estos métodos requieren sus propias derivaciones, e
 md"""
 ### Sistema de ecuaciones:
 
-Nuestro sistema de ecuaciones entonces busca solucionar un problema de interpolación, en donde buscaremos plantear $AC=B$, donde $A=A(X)$ y $B=B(Y)$, en particular tendrian la siguiente forma: 
+Nuestro sistema de ecuaciones entonces busca solucionar un problema de interpolación, en donde buscaremos plantear $AC=B$, donde $A=A(X)$ y $B=B(Y)$; en particular tendrían la siguiente forma: 
 
 $AC=B$
 $\begin{bmatrix}
@@ -163,7 +163,7 @@ y_{20}
 
 # ╔═╡ 71769a32-02eb-42e4-8f4d-b77f4db4f6be
 md"""
-más como tenemos los valores podemos remplazar de la siguiente manera:
+Ahora, como tenemos los valores, podemos reemplazar de la siguiente manera:
 
 $\begin{bmatrix}
 1 & 0 & 0 & 0 & 0 & 0 \\
@@ -219,19 +219,20 @@ c_6
 3444321
 \end{bmatrix}$
 
-Así para nuestro modelo definiremos las variables $A$ y $B$:
+Así, para nuestro modelo, definiremos las variables $A$ y $B$:
+
 """
 
 # ╔═╡ 994aaf42-115f-435e-bfb3-ecab50e6e094
-A=hcat([DatosX .^ (i-1) for i in 1:6]...)
+A=hcat([DatosX .^ (i-1) for i in 1:6]...) 
 
 # ╔═╡ 2679180d-cdc2-47c2-9f48-fa6f2a3af62d
 md"""
 ### Funciones:
 
-Tal como se menciono anteriormente se hara uso de ciertas funciones, algunas de las cuales definiremos a continuación:
+Tal como se mencionó anteriormente, se hará uso de ciertas funciones, algunas de las cuales definiremos a continuación:
 
-Nota, **arrAux** es un arreglo de datos de valor 1 usado para el calculo de Eval.
+Nota: **arrAux** es el arreglo de datos de valor $1$ usado para el cálculo de Eval.
 """
 
 # ╔═╡ 73437f68-0439-4153-b31f-dac64a366ea5
@@ -242,58 +243,57 @@ function Eval(C)
 	Eval_Modelo = C[1] * arrAux + C[2] * DatosX + C[3] * DatosX .^ 2 + C[4] * DatosX .^ 3 + C[5] * DatosX .^ 4 + C[6] * DatosX .^ 5;
 	return Eval_Modelo
 end
-	
 
 # ╔═╡ a821e5b5-9aff-45e7-bdd4-203eec69b3e5
 function Eval2(A, C)
-	Eval2_Modelo=A*C
+    Eval2_Modelo = A * C
+    return Eval2_Modelo
 end
 
 # ╔═╡ 4a7a74f7-0ff4-4142-8934-b44fa245ddd5
 function Res(A, C, B)
-	Eval_Modelo=Eval(A)
-
-	Res_Modelo=Eval_Modelo-B
-
-	return Res_Modelo
+    Eval_Modelo = Eval(C)
+    Res_Modelo = Eval_Modelo - B
+    return Res_Modelo
 end
 
 # ╔═╡ 34cb2b8e-0bde-4725-8776-663466775225
 function NRes(A, C, B)
-	Res_Modelo=Res(A, C, B)
-
-	NRes_Modelo=norm(Res_Modelo)
-
-	return NRes_Modelo
+    Res_Modelo = Res(A, C, B)
+    NRes_Modelo = norm(Res_Modelo)
+    return NRes_Modelo
 end
 
 # ╔═╡ eef07b09-959b-49c7-b345-4d7dd4f5945c
 md"""
 ### Valor objetivo.
 
-Como se menciono anteriormente, ya tenemos solucion, la cual es:
+Como se mencionó anteriormente, ya tenemos solución, la cual es:
 
-$C=[1,1,1,1,1,1]$
+$C = [1, 1, 1, 1, 1, 1]$
 
-Asi que compararemos los metodos con esta solucion
-
+Así que compararemos los métodos con esta solución.
 """
 
 # ╔═╡ b523662f-1e66-4890-bec3-99d14dd579b9
-C_Best=[1.,1.,1.,1.,1.,1.]
+C_Best = [1., 1., 1., 1., 1., 1.]
 
 # ╔═╡ c5ed1f38-1cb5-4d49-a519-a61ccc0ff617
 begin
-	Eval_Best=Eval(C_Best)
-	scatter(DatosX,DatosY,ls=:dash,label="Datos Y",lw=4, xlabel = "Datos X",yaxis="Datos Y", title="Grafica datos")
-	plot!(DatosX, Eval_Best, lw=5, label="Modelo Best");
+    Eval_Best = Eval(C_Best)
+    scatter(DatosX, DatosY, ls=:dash, label="Datos Y", lw=4, xlabel="Datos X", 			yaxis="Datos Y", title="Gráfica de datos")
+    plot!(DatosX, Eval_Best, lw=5, label="Modelo Best")
 end
 
-# Esta va a ser el codigo para el mapeo de los datos
+# Este código realiza el mapeo de los datos.
 
 # ╔═╡ 04c6fc60-b4a0-4f20-b3c0-0e5b78fc7133
 md"""
-Ahora, revisaremos nuestros, ya que (se suponen) son los que minimizan el residuo, de aqui salen las funciones **Dif_C** de diferencia de los valores de C, **NDif_C** norma de esta diferencia, **Dif** diferencia de los residuos, **NDif** norma de la diferencia:
+A continuación, construiremos las funciones que nos ayudarán a calcular las diferencias y normas relacionadas con los resultados. Estas funciones incluirán:
+- **Dif_C**: diferencia de los valores de C.
+- **NDif_C**: norma de esta diferencia.
+- **Dif**: diferencia de los residuos.
+- **NDif**: norma de la diferencia.
 """
 
 # ╔═╡ a922ee43-fecf-4090-9e19-043309a8712b
@@ -304,32 +304,33 @@ end
 
 # ╔═╡ 03b91224-3ee0-42c1-8b0c-11b3226a45af
 function NDif_C(C_Modelo)
-	Dif_Modelo=Dif_C(C_Modelo)
-	return norm(Dif_Modelo)
+    Dif_Modelo = Dif_C(C_Modelo)
+    return norm(Dif_Modelo)
 end
 
 # ╔═╡ 03998250-512a-40e1-b4d6-888040598154
 md"""
+---
 ### Aproximación por función de minimización
 
-para nuestro trabajo revisaremos ademas de los metodos dados, la función optim incorporada en la libreria respectiva de Julia, usando el metodo numerico integrado de LBFGS.
+Para nuestro trabajo revisaremos, además de los métodos dados, la función optim incorporada en la librería respectiva de Julia, usando el método numérico integrado de LBFGS.
 
-Para esto crearemos una función particular para la Norma del Residuo dada una variable de optimización $C\_optim$, y luego buscaremos el argumento que minimize tal función, esta información se guardara posteriormente en la variable **NRes\_Optim\_min**:
+Para esto, crearemos una función particular para la norma del residuo dada una variable de optimización $C_{\text{optim}}$, y luego buscaremos el argumento que minimice tal función. Esta información se guardará posteriormente en la variable **NRes\_Optim\_min**:
 """
 
 # ╔═╡ 679521d7-d3e3-4fc6-8f9b-a5444ccaa9ef
 md"""
-La función *Optim* incorporada nos da tanto el valor del minimizador como el del minimo, los cuales renombraremos apropiadamente a continuación:
+La función *Optim* incorporada nos proporciona tanto el valor del minimizador como el del mínimo, los cuales renombraremos apropiadamente a continuación:
 """
 
 # ╔═╡ 44b08efa-1d21-43c1-bafe-7243a4b80b2d
 md"""
-Posteriormente calcularemos el residuo y las diferencias con nuestro **Best**
+Posteriormente, calcularemos el residuo y las diferencias con nuestro **Best**.
 """
 
 # ╔═╡ dc613908-2270-40a5-8469-2731183ab2b5
 md"""
-Los valores claramente no se acercan al objetivo, la diferencia en norma con nuestro **Best** es de casi $1$, podriamos concluir entonces que nos da una diferencia bastante remarcada... ¿o no lo hace?
+Los valores claramente no se acercan al objetivo. La diferencia en norma con nuestro **Best** es de casi $1$, por lo que podríamos concluir que nos da una diferencia bastante marcada... ¿o no lo hace?
 """
 
 # ╔═╡ 9bd0a122-ae6a-4b88-9c59-ebc51616f634
@@ -338,7 +339,14 @@ Tanto la diferencia como la norma de la diferencia con nuestra función original
 """
 
 # ╔═╡ e612950a-57df-4297-918d-064df12efdee
+md"""
+---
+### Aproximación por minimos cuadrados
 
+para nuestro trabajo revisaremos ademas de los metodos dados, la función optim incorporada en la libreria respectiva de Julia, usando el metodo numerico integrado de LBFGS.
+
+Para esto crearemos una función particular para la Norma del Residuo dada una variable de optimización $C\_optim$, y luego buscaremos el argumento que minimize tal función, esta información se guardara posteriormente en la variable **NRes\_Optim\_min**:
+"""
 
 # ╔═╡ db0e4d42-f0ba-4f3c-8ec5-b32d24f8ead7
 SSS=svd(A).S
@@ -354,13 +362,13 @@ Res_Best=Res(A, C_Best, B)
 
 # ╔═╡ e7bd91a6-fd25-493a-a2b1-3eeaff173a20
 function Dif(Res_Modelo)
-	return Res_Modelo-Res_Best
+    return Res_Modelo - Res_Best
 end
 
 # ╔═╡ 6f035cbb-8ba3-49c4-a1d6-9308e9acd3a8
 function NDif(Res_Modelo)
-	Res_Modelo=Dif(Res_Modelo)
-	return norm(Res_Modelo)
+    Res_Modelo = Dif(Res_Modelo)
+    return norm(Res_Modelo)
 end
 
 # ╔═╡ 9044a48e-a197-42d8-a735-66fa15fba3e5
